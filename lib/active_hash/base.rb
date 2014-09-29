@@ -197,6 +197,10 @@ module ActiveHash
         index and @records[index]
       end
 
+      def find_by(options)
+        where(options).first
+      end
+
       delegate :first, :last, :to => :all
 
       def fields(*args)
@@ -210,8 +214,8 @@ module ActiveHash
         validate_field(field_name)
         field_names << field_name
 
-        define_getter_method(field_name, options[:default])
-        define_setter_method(field_name)
+        define_getter_method(field_name, options[:default]) unless instance_methods.include?(field_name)
+        define_setter_method(field_name) unless instance_methods.include?(:"#{field_name}=")
         define_interrogator_method(field_name)
         define_custom_find_method(field_name)
         define_custom_find_all_method(field_name)
@@ -479,6 +483,14 @@ module ActiveHash
 
     def marked_for_destruction?
       false
+    end
+
+    def read_attribute(name)
+      attributes[name.to_sym]
+    end
+
+    def write_attribute(name, value)
+      attributes[name.to_sym] = value
     end
 
   end

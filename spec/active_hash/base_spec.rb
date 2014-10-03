@@ -90,9 +90,9 @@ describe ActiveHash, "Base" do
   describe "typed_field" do
     before do
       class Aaa < ActiveHash::Base
-        field :name, type: String
-        field :num, type: Integer
-        field :rate, type: Float
+        field :name, type: :string
+        field :num, type: :integer
+        field :rate, type: :float
       end
       Aaa.delete_all
     end
@@ -121,7 +121,7 @@ describe ActiveHash, "Base" do
     end
 
     it 'define method unless method defined' do
-      Aaa.send(:field, :num, type:String)
+      Aaa.send(:field, :num, type: :string)
       aaa = Aaa.create(num: '123')
       aaa.num.should == 123
     end

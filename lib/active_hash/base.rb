@@ -16,11 +16,11 @@ module ActiveHash
   end
 
   def self.type_methods
-    @type_methods ||= {String => :to_s, Integer => :to_i, Float => :to_f}.tap do |type_methods|
-      type_methods[Boolean] = :to_bool if ''.respond_to? :to_bool
-      type_methods[DateTime] = :to_datetime if ''.respond_to? :to_datetime
-      type_methods[Date] = :to_date if ''.respond_to? :to_date
-      type_methods[Time] = :to_time if ''.respond_to? :to_time
+    @type_methods ||= {string: :to_s, integer: :to_i, float: :to_f}.tap do |type_methods|
+      type_methods[:bool] = :to_bool if ''.respond_to? :to_bool
+      type_methods[:datetime] = :to_datetime if ''.respond_to? :to_datetime
+      type_methods[:date] = :to_date if ''.respond_to? :to_date
+      type_methods[:time] = :to_time if ''.respond_to? :to_time
     end
   end
 

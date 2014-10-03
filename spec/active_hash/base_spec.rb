@@ -197,12 +197,6 @@ describe ActiveHash, "Base" do
       ]
     end
 
-    it "raises ArgumentError if no conditions are provided" do
-      lambda{
-        Country.where
-      }.should raise_error(ArgumentError)
-    end
-
     it "returns all records when passed nil" do
       Country.where(nil).should == Country.all
     end
@@ -1043,4 +1037,26 @@ describe ActiveHash, "Base" do
 
   end
 
+  describe "not" do
+    it "where.not(conditions)" do
+      Country.data = [{name: 'aaa'}, {name:'abc'}]
+      scope = Country.where.not(name:'aaa')
+      scope.count.should == 1
+      scope.first.name.should == 'abc'
+    end
+  end
+
+  describe "attribute" do
+    it 'read and write' do
+      name = 'c1'
+      Country.data = [{name: name}]
+      country = Country.first
+      country.name.should == name
+      country.read_attribute(:name).should == name
+      country.read_attribute('name').should == name
+      name = 'c2'
+      country.write_attribute(:name, name)
+      country.read_attribute(:name).should == name
+    end
+  end
 end

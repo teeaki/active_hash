@@ -142,25 +142,6 @@ module ActiveHash
         record
       end
 
-      def all(options={})
-        if options.has_key?(:conditions)
-          where(options[:conditions])
-        else
-          @records || []
-        end
-      end
-
-      def where(options)
-        return @records if options.nil?
-        (@records || []).select do |record|
-          options.all? { |col, match| record[col] == match }
-        end
-      end
-
-      def count
-        all.length
-      end
-
       def transaction
         yield
       rescue LocalJumpError => err
@@ -177,19 +158,8 @@ module ActiveHash
         @records = []
       end
 
-      def find(id, * args)
-        case id
-          when nil
-            nil
-          when :all
-            all
-          when Array
-            id.map { |i| find(i) }
-          else
-            find_by_id(id) || begin
-              raise RecordNotFound.new("Couldn't find #{name} with ID=#{id}")
-            end
-        end
+      def all(options = {})
+        ScopedArray.new(@records || [], self).all(options)
       end
 
       def find_by_id(id)
@@ -197,11 +167,7 @@ module ActiveHash
         index and @records[index]
       end
 
-      def find_by(options)
-        where(options).first
-      end
-
-      delegate :first, :last, :to => :all
+      delegate :first, :last, :where, :count, :find, :find_by, :to => :all
 
       def fields(*args)
         options = args.extract_options!

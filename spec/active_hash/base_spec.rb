@@ -87,6 +87,40 @@ describe ActiveHash, "Base" do
     end
   end
 
+  describe "typed_field" do
+    before do
+      class Aaa < ActiveHash::Base
+        field :name, type: String
+        field :num, type: Integer
+        field :rate, type: Float
+      end
+      Aaa.delete_all
+    end
+
+    it 'casted value' do
+      aaa = Aaa.create(name: 'name', num: '123', rate:'12.3')
+      aaa.name.should == 'name'
+      aaa.num.should == 123
+      aaa.rate.should == 12.3
+    end
+
+    it 'find with casting' do
+      Aaa.create(name: 'name1', num: '1234', rate:'12.3')
+      aaa = Aaa.create(name: 'name', num: '123', rate:'12.3')
+      Aaa.find_by_name('name').should == aaa
+      Aaa.find_by_num('123').should == aaa
+      Aaa.find_all_by_rate('12.3').size.should == 2
+    end
+
+    it 'where with casting' do
+      Aaa.create(name: 'name1', num: '1234', rate:'12.3')
+      aaa = Aaa.create(name: 'name', num: '123', rate:'12.3')
+      Aaa.where(name: 'name').first.should == aaa
+      Aaa.where(num:'123').first.should == aaa
+      Aaa.where(rate:'12.3').all.size.should == 2
+    end
+  end
+
   describe ".data=" do
     before do
       class Region < ActiveHash::Base

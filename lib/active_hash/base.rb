@@ -12,8 +12,19 @@ module ActiveHash
   class FileTypeMismatchError < StandardError
   end
 
-  class Base
+  class FieldTypeError < StandardError
+  end
 
+  def self.type_methods
+    @type_methods ||= {String => :to_s, Integer => :to_i, Float => :to_f}.tap do |type_methods|
+      type_methods[Boolean] = :to_bool if ''.respond_to? :to_bool
+      type_methods[DateTime] = :to_datetime if ''.respond_to? :to_datetime
+      type_methods[Date] = :to_date if ''.respond_to? :to_date
+      type_methods[Time] = :to_time if ''.respond_to? :to_time
+    end
+  end
+
+  class Base
     if respond_to?(:class_attribute)
       class_attribute :_data, :dirty
     else
@@ -44,7 +55,11 @@ module ActiveHash
       end
 
       def field_names
-        @field_names ||= []
+        field_types.keys
+      end
+
+      def field_types
+        @field_types ||= {}
       end
 
       def the_meta_class
@@ -178,13 +193,16 @@ module ActiveHash
 
       def field(field_name, options = {})
         validate_field(field_name)
-        field_names << field_name
+        type = options[:type]
+        validate_type(type) if type
+        field_types[field_name] = type
 
-        define_getter_method(field_name, options[:default]) unless instance_methods.include?(field_name)
-        define_setter_method(field_name) unless instance_methods.include?(:"#{field_name}=")
+        type_method = ActiveHash.type_methods[type]
+        define_getter_method(field_name, options[:default])
+        define_setter_method(field_name, type_method)
         define_interrogator_method(field_name)
-        define_custom_find_method(field_name)
-        define_custom_find_all_method(field_name)
+        define_custom_find_method(field_name, type_method)
+        define_custom_find_all_method(field_name, type_method)
       end
 
       def validate_field(field_name)
@@ -193,7 +211,11 @@ module ActiveHash
         end
       end
 
-      private :validate_field
+      def validate_type(type)
+        raise FieldTypeError.new("#{type} not in #{ActiveHash.type_methods.keys.inspect}") unless ActiveHash.type_methods[type]
+      end
+
+      private :validate_field, :validate_type
 
       def respond_to?(method_name, include_private=false)
         super ||
@@ -246,11 +268,11 @@ module ActiveHash
 
       private :define_getter_method
 
-      def define_setter_method(field)
+      def define_setter_method(field, type_method)
         method_name = "#{field}="
         unless has_instance_method?(method_name)
           define_method(method_name) do |new_val|
-            attributes[field] = new_val
+            attributes[field] = new_val.nil? ? nil : type_method.nil? ? new_val : new_val.send(type_method)
           end
         end
       end
@@ -268,13 +290,13 @@ module ActiveHash
 
       private :define_interrogator_method
 
-      def define_custom_find_method(field_name)
+      def define_custom_find_method(field_name, type_method)
         method_name = :"find_by_#{field_name}"
         unless has_singleton_method?(method_name)
           the_meta_class.instance_eval do
             define_method(method_name) do |*args|
               options = args.extract_options!
-              identifier = args[0]
+              identifier = args[0].nil? ? nil : type_method.nil? ? args[0] : args[0].send(type_method)
               all.detect { |record| record.send(field_name) == identifier }
             end
           end
@@ -283,14 +305,14 @@ module ActiveHash
 
       private :define_custom_find_method
 
-      def define_custom_find_all_method(field_name)
+      def define_custom_find_all_method(field_name, type_method)
         method_name = :"find_all_by_#{field_name}"
         unless has_singleton_method?(method_name)
           the_meta_class.instance_eval do
             unless singleton_methods.include?(method_name)
               define_method(method_name) do |*args|
                 options = args.extract_options!
-                identifier = args[0]
+                identifier = args[0].nil? ? nil : type_method.nil? ? args[0] : args[0].send(type_method)
                 all.select { |record| record.send(field_name) == identifier }
               end
             end

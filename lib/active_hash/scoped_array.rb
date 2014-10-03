@@ -15,6 +15,12 @@ module ActiveHash
 
     def where(options = nil)
       return self if options.nil?
+      options.each {|name, value|
+        type = @klass.field_types[name]
+        if type && value != nil
+          options[name] = value.send(ActiveHash.type_methods[type])
+        end
+      }
       self.class.new(select do |record|
         options.all? { |col, match| record[col] == match }
       end, @klass)

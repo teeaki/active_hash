@@ -20,9 +20,9 @@ describe ActiveHash, "Base" do
       Country.fields :name, :iso_name
     end
 
-    it "returns ar like attribute_names" do
+    it "returns attribute_names" do
       Country.attribute_names.size.should == 3
-      %w[id name iso_name].each {|attr| Country.attribute_names.should be_include(attr) }
+      [:id, :name, :iso_name].each {|attr| Country.attribute_names.should be_include(attr) }
     end
   end
 

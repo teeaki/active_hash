@@ -119,6 +119,12 @@ describe ActiveHash, "Base" do
       Aaa.where(num:'123').first.should == aaa
       Aaa.where(rate:'12.3').all.size.should == 2
     end
+
+    it 'define method unless method defined' do
+      Aaa.send(:field, :num, type:String)
+      aaa = Aaa.create(num: '123')
+      aaa.num.should == 123
+    end
   end
 
   describe ".data=" do

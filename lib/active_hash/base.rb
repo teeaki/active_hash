@@ -364,7 +364,7 @@ module ActiveHash
       private :mark_clean
 
       def has_instance_method?(name)
-        instance_methods.map { |method| method.to_sym }.include?(name)
+        instance_methods.map { |method| method.to_sym }.include?(name.to_sym)
       end
 
       private :has_instance_method?

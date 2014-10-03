@@ -15,6 +15,17 @@ describe ActiveHash, "Base" do
     expect { Country.transaction }.to raise_error(LocalJumpError)
   end
 
+  describe ".attribute_names" do
+    before do
+      Country.fields :name, :iso_name
+    end
+
+    it "returns ar like attribute_names" do
+      Country.attribute_names.size.should == 3
+      %w[id name iso_name].each {|attr| Country.attribute_names.should be_include(attr) }
+    end
+  end
+
   describe ".fields" do
     before do
       Country.fields :name, :iso_name

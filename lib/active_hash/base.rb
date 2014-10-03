@@ -58,6 +58,10 @@ module ActiveHash
         field_types.keys
       end
 
+      def attribute_names
+        ['id'] + field_names.map {|name| name.to_s }
+      end
+
       def field_types
         @field_types ||= {}
       end

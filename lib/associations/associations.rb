@@ -82,18 +82,18 @@ module ActiveHash
 
     def self.included(base)
       base.extend Methods
+      base.include ActiveRecord::Reflection
     end
 
     module Methods
       def has_many(association_id, options = {})
+        options = {
+            :class_name => association_id.to_s.classify,
+            :foreign_key => self.to_s.foreign_key,
+            :primary_key => self.primary_key
+        }.merge(options)
 
         define_method(association_id) do
-          options = {
-            :class_name => association_id.to_s.classify,
-            :foreign_key => self.class.to_s.foreign_key,
-            :primary_key => self.class.primary_key
-          }.merge(options)
-
           klass = options[:class_name].constantize
           primary_key_value = send(options[:primary_key])
           foreign_key = options[:foreign_key].to_sym
@@ -106,15 +106,15 @@ module ActiveHash
             klass.where(foreign_key => primary_key_value)
           end
         end
+        _create_reflection(:has_many, association_id, options)
       end
 
       def has_one(association_id, options = {})
-        define_method(association_id) do
-          options = {
+        options = {
             :class_name => association_id.to_s.classify,
-            :foreign_key => self.class.to_s.foreign_key
-          }.merge(options)
-
+            :foreign_key => self.to_s.foreign_key
+        }.merge(options)
+        define_method(association_id) do
           scope = options[:class_name].constantize
 
           if scope.respond_to?(:scoped) && options[:conditions]
@@ -122,6 +122,7 @@ module ActiveHash
           end
           scope.send("find_by_#{options[:foreign_key]}", id)
         end
+        _create_reflection(:has_one, association_id, options)
       end
 
       def belongs_to(association_id, options = {})
@@ -142,6 +143,40 @@ module ActiveHash
           attributes[options[:foreign_key].to_sym] = new_value ? new_value.send(options[:primary_key]) : nil
         end
 
+        _create_reflection(:belongs_to, association_id, options)
+      end
+
+      def _create_reflection(macro, association_id, options)
+        if respond_to?(:create_reflection)
+          method = method(:create_reflection)
+          if method.respond_to?(:parameters) && method.parameters.length == 5
+            create_reflection(
+                macro,
+                association_id.to_sym,
+                nil,
+                options,
+                self
+            )
+          else
+            create_reflection(
+                macro,
+                association_id.to_sym,
+                options,
+                options[:class_name].constantize
+            )
+          end
+        elsif ActiveRecord::Reflection.respond_to?(:create)
+          ActiveRecord::Reflection.add_reflection(
+              self,
+              association_id.to_sym,
+              ActiveRecord::Reflection.create(
+                  macro,
+                  association_id.to_sym,
+                  nil,
+                  options,
+                  self)
+          )
+        end
       end
     end
 

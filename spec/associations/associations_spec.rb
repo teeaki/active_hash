@@ -78,6 +78,11 @@ describe ActiveHash::Base, "associations" do
       end
     end
 
+    it "create reflection" do
+      City.has_many :authors
+      City.reflections.keys.should be_include(:authors)
+      City.reflections.first.last.klass.to_s.should == 'Author'
+    end
   end
 
   describe "#belongs_to" do
@@ -94,6 +99,12 @@ describe ActiveHash::Base, "associations" do
         Author.belongs_to :city
         author = Author.create :city_id => 123
         author.city.should be_nil
+      end
+
+      it "create reflection" do
+        Author.belongs_to :city
+        Author.reflections.keys.should be_include(:city)
+        Author.reflections.first.last.klass.to_s.should == 'City'
       end
     end
 
@@ -170,6 +181,12 @@ describe ActiveHash::Base, "associations" do
       it "returns nil when there are no records" do
         city = City.create :id => 1
         city.author.should be_nil
+      end
+
+      it "create reflection" do
+        City.has_one :author
+        City.reflections.keys.should be_include(:author)
+        City.reflections.first.last.klass.to_s.should == 'Author'
       end
     end
   end

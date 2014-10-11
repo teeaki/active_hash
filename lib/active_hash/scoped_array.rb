@@ -16,7 +16,7 @@ module ActiveHash
     def where(options = nil)
       return self if options.nil?
       options.each {|name, value|
-        type = @klass.field_types[name]
+        type = @klass.field_options[name][:type]
         if type && value != nil
           options[name] = value.send(ActiveHash.type_methods[type])
         end

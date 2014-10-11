@@ -55,15 +55,15 @@ module ActiveHash
       end
 
       def field_names
-        field_types.keys
+        field_options.keys
       end
 
       def attribute_names
         [:id] + field_names
       end
 
-      def field_types
-        @field_types ||= {}
+      def field_options
+        @field_options ||= {}
       end
 
       def the_meta_class
@@ -220,7 +220,7 @@ module ActiveHash
         validate_field(field_name)
         type = options[:type]
         validate_type(type) if type
-        field_types[field_name] = type
+        field_options[field_name] = options
 
         type_method = ActiveHash.type_methods[type]
         define_getter_method(field_name, options[:default])

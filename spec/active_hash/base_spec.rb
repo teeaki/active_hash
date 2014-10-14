@@ -127,7 +127,9 @@ describe ActiveHash, "Base" do
       Aaa.create(name: 'name1', num: '1234', rate:'12.3')
       aaa = Aaa.create(name: 'name', num: '123', rate:'12.3')
       Aaa.where(name: 'name').first.should == aaa
-      Aaa.where(num:'123').first.should == aaa
+      Aaa.where(num: 123).first.should == aaa
+      Aaa.where(num: '123').first.should == aaa
+      Aaa.where(rate:12.3).all.size.should == 2
       Aaa.where(rate:'12.3').all.size.should == 2
     end
 
@@ -289,6 +291,16 @@ describe ActiveHash, "Base" do
           {:id => 2, :name => "Mexico", :language => 'Spanish'}
         ]
       end.should raise_error(ActiveHash::IdError)
+    end
+
+    it "expand array condition" do
+      records = Country.where(:name => ['US', 'Canada'])
+      records.count.should == 2
+    end
+
+    it "expand range condition" do
+      records = Country.where(:id => (2..3))
+      records.count.should == 2
     end
   end
 

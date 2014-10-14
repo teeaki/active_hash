@@ -16,13 +16,26 @@ module ActiveHash
     def where(options = nil)
       return self if options.nil?
       options.each {|name, value|
-        type = @klass.field_options[name][:type]
-        if type && value != nil
-          options[name] = value.send(ActiveHash.type_methods[type])
+        foptions = @klass.field_options[name]
+        next unless foptions && (type = foptions[:type]) && value != nil
+        type_method = ActiveHash.type_methods[type]
+        if value.is_a?(Array)
+          options[name] = value.map{|val|val.send(type_method)}
+        elsif !value.is_a?(Range)
+          options[name] = value.send(type_method)
         end
       }
       self.class.new(select do |record|
-        options.all? { |col, match| record[col] == match }
+        options.all? do |col, match|
+          attr = record[col]
+          if match.is_a?(Array)
+            match.any? {|val| attr == val }
+          elsif match.is_a?(Range)
+            match.first <= attr && match.last >= attr
+          else
+            attr == match
+          end
+        end
       end, @klass)
     end
 

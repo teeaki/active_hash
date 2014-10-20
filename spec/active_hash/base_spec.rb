@@ -652,6 +652,13 @@ describe ActiveHash, "Base" do
       country[:foo] = :bar
       country.foo.should == :bar
     end
+
+    it "is works with update_attributes" do
+      Country.field :foo
+      country = Country.new
+      country.update_attributes(:foo => :bar)
+      country.foo.should == :bar
+    end
   end
 
   describe "reader methods" do

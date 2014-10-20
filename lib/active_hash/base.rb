@@ -506,5 +506,8 @@ module ActiveHash
       attributes[name.to_sym] = value
     end
 
+    def update_attributes(attrs)
+      attrs.each{|key, val| self[key.to_sym] = val }
+    end
   end
 end

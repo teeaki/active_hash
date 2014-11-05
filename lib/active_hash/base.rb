@@ -413,7 +413,7 @@ module ActiveHash
     end
 
     def [](key)
-      attributes[key]
+      respond_to?(key) ? send(key) : nil
     end
 
     def []=(key, val)

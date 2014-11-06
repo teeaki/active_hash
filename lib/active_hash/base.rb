@@ -410,6 +410,10 @@ module ActiveHash
       attributes.dup.each do |key, value|
         send "#{key}=", value
       end
+      (self.class.field_options.keys - attributes.keys).each do |key|
+        options = self.class.field_options[key]
+        send "#{key}=", options[:default] if options.has_key?(:default)
+      end
     end
 
     def [](key)

@@ -217,6 +217,7 @@ module ActiveHash
       end
 
       def field(field_name, options = {})
+        return if field_options[field_name]
         validate_field(field_name)
         type = options[:type]
         validate_type(type) if type

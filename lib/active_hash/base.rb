@@ -15,12 +15,21 @@ module ActiveHash
   class FieldTypeError < StandardError
   end
 
-  def self.type_methods
-    @type_methods ||= {string: :to_s, integer: :to_i, float: :to_f}.tap do |type_methods|
-      type_methods[:bool] = :to_bool if ''.respond_to? :to_bool
-      type_methods[:datetime] = :to_datetime if ''.respond_to? :to_datetime
-      type_methods[:date] = :to_date if ''.respond_to? :to_date
-      type_methods[:time] = :to_time if ''.respond_to? :to_time
+  class Convert
+    def initialize(*args)
+      @methods = args
+    end
+    def try(value)
+      @methods.inject(value) {|val, method| val.send(method)}
+    end
+  end
+
+  def self.converters
+    @converters ||= {string: Convert.new(:to_s), integer: Convert.new(:to_i), float: Convert.new(:to_f)}.tap do |converters|
+      converters[:bool] = Convert.new(:to_bool) if ''.respond_to? :to_bool
+      converters[:datetime] = Convert.new(:to_time, :to_datetime) if ''.respond_to? :to_datetime
+      converters[:date] = Convert.new(:to_date) if ''.respond_to? :to_date
+      converters[:time] = Convert.new(:to_time) if ''.respond_to? :to_time
     end
   end
 
@@ -223,12 +232,12 @@ module ActiveHash
         validate_type(type) if type
         field_options[field_name] = options
 
-        type_method = ActiveHash.type_methods[type]
+        convert = ActiveHash.converters[type]
         define_getter_method(field_name, options[:default])
-        define_setter_method(field_name, type_method)
+        define_setter_method(field_name, convert)
         define_interrogator_method(field_name)
-        define_custom_find_method(field_name, type_method)
-        define_custom_find_all_method(field_name, type_method)
+        define_custom_find_method(field_name, convert)
+        define_custom_find_all_method(field_name, convert)
       end
 
       def validate_field(field_name)
@@ -238,7 +247,7 @@ module ActiveHash
       end
 
       def validate_type(type)
-        raise FieldTypeError.new("#{type} not in #{ActiveHash.type_methods.keys.inspect}") unless ActiveHash.type_methods[type]
+        raise FieldTypeError.new("#{type} not in #{ActiveHash.converters.keys.inspect}") unless ActiveHash.converters[type]
       end
 
       private :validate_field, :validate_type
@@ -294,11 +303,11 @@ module ActiveHash
 
       private :define_getter_method
 
-      def define_setter_method(field, type_method)
+      def define_setter_method(field, convert)
         method_name = "#{field}="
         unless has_instance_method?(method_name)
           define_method(method_name) do |new_val|
-            attributes[field] = new_val.nil? ? nil : type_method.nil? ? new_val : new_val.send(type_method)
+            attributes[field] = new_val.nil? ? nil : convert.nil? ? new_val : convert.try(new_val)
           end
         end
       end
@@ -316,13 +325,13 @@ module ActiveHash
 
       private :define_interrogator_method
 
-      def define_custom_find_method(field_name, type_method)
+      def define_custom_find_method(field_name, convert)
         method_name = :"find_by_#{field_name}"
         unless has_singleton_method?(method_name)
           the_meta_class.instance_eval do
             define_method(method_name) do |*args|
               options = args.extract_options!
-              identifier = args[0].nil? ? nil : type_method.nil? ? args[0] : args[0].send(type_method)
+              identifier = args[0].nil? ? nil : convert.nil? ? args[0] : convert.try(args[0])
               all.detect { |record| record.send(field_name) == identifier }
             end
           end
@@ -331,14 +340,14 @@ module ActiveHash
 
       private :define_custom_find_method
 
-      def define_custom_find_all_method(field_name, type_method)
+      def define_custom_find_all_method(field_name, convert)
         method_name = :"find_all_by_#{field_name}"
         unless has_singleton_method?(method_name)
           the_meta_class.instance_eval do
             unless singleton_methods.include?(method_name)
               define_method(method_name) do |*args|
                 options = args.extract_options!
-                identifier = args[0].nil? ? nil : type_method.nil? ? args[0] : args[0].send(type_method)
+                identifier = args[0].nil? ? nil : convert.nil? ? args[0] : convert.try(args[0])
                 all.select { |record| record.send(field_name) == identifier }
               end
             end

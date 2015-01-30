@@ -18,11 +18,11 @@ module ActiveHash
       options.each {|name, value|
         foptions = @klass.field_options[name]
         next unless foptions && (type = foptions[:type]) && value != nil
-        type_method = ActiveHash.type_methods[type]
+        convert = ActiveHash.converters[type]
         if value.is_a?(Array)
-          options[name] = value.map{|val|val.send(type_method)}
+          options[name] = value.map{|val|convert.try(val)}
         elsif !value.is_a?(Range)
-          options[name] = value.send(type_method)
+          options[name] = convert.try(value)
         end
       }
       self.class.new(select do |record|
